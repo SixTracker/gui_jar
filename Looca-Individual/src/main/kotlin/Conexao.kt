@@ -16,4 +16,19 @@ object Conexao {
             }
             return  field
         }
+
+    var jdbcTemplateServer: JdbcTemplate? = null
+        get() {
+            if (field == null) {
+                val dataSourceServer = BasicDataSource()
+                dataSourceServer.url = "jdbc:sqlserver://54.146.1.25;databaseName=sixtracker;encrypt=false";
+                dataSourceServer.driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+                dataSourceServer.username = "sa"
+                dataSourceServer.password = "Sixtracker@"
+                val novoJdbcTemplateServer = JdbcTemplate(dataSourceServer)
+                field = novoJdbcTemplateServer
+
+            }
+            return field
+        }
 }

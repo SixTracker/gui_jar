@@ -10,19 +10,19 @@ import json
 import string
 import socket
 import sys
+import pyodbc
+
+print("Script Python enviando Sql.Server em execução...")
 
 
-print("Script Python em execução...")
-
-
-def mysql_connection(host, user, passwd, database=None):
-    connection = connect(
-        host=host,
-        user=user,
-        passwd=passwd,
-        database=database
-    )
-    return connection
+def sql_server_connection(server, database, username, password):
+    connection_string = f"DRIVER={{SQL Server}};SERVER={'54.146.1.25'};DATABASE={'sixtracker'};UID={'sa'};PWD={'Sixtracker@'}"
+    try:
+        connection = pyodbc.connect(connection_string)
+        return connection
+    except pyodbc.Error as ex:
+        print(f"Erro ao conectar ao banco de dados: {ex}")
+        sys.exit()
 
 
 def get_ip():
@@ -41,7 +41,10 @@ if __name__ == "__main__":
     hostname = socket.gethostname()
     print("Nome do host da máquina:", hostname)
 
-    connection = mysql_connection('localhost', 'root', '1234', 'sixtracker')
+    # Obtendo a conexão com o SQL Server
+    connection = sql_server_connection(server='54.146.1.25', database='sixtracker', username='sa',
+                                       password='Sixtracker@')
+
     cursor = connection.cursor()
 
     # Definindo os componentes
@@ -54,14 +57,14 @@ if __name__ == "__main__":
     }
 
     # Buscar os componentes cadastrados para o servidor
-    cursor.execute("SELECT idComponente, nome FROM Componente WHERE fkServidor = %s", (426,))    
+    cursor.execute("SELECT idComponente, nome FROM Componente WHERE fkServidor = ?", (11,))
     componentes_servidor = cursor.fetchall()
 
     # Verificar e adicionar os componentes de 1 a 5 se não existirem
     for componente_id, componente_nome in componentes.items():
         if not any(componente_id == comp[0] for comp in componentes_servidor):
             # Componente não encontrado, adicionar à tabela Componente
-            cursor.execute("INSERT INTO Componente (nome, fkServidor) VALUES (%s, 426)", (componente_nome,))
+            cursor.execute("INSERT INTO Componente (nome, fkServidor) VALUES (?, ?)", (componente_nome, 11))
 
     if not componentes_servidor:
         print(f"Não há componentes cadastrados para o Servidor {hostname}. Cadastre componentes para continuar.")
@@ -90,11 +93,12 @@ while True:
     # Outros
     boot_time = datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S")
 
+    # Obtendo a data e hora atuais no formato correto
     horarioAtual = datetime.now()
     horarioFormatado = horarioAtual.strftime('%Y-%m-%d %H:%M:%S')
 
     ins = [cpuPorcentagem, memoriaPorcentagem]
-    componentes = [181, 182]
+    componentes = [264, 265]
 
     cursor = connection.cursor()
 
@@ -102,8 +106,9 @@ while True:
         valorRegistro = ins[i]
         componente = componentes[i]
 
-        query = "INSERT INTO Registro (valorRegistro, dataRegistro, fkComponente) VALUES (%s, %s, %s)"
-        cursor.execute(query, (valorRegistro, horarioFormatado, componente))
+        # Utilizando placeholders corretos para SQL Server e formatando a data
+        query = "INSERT INTO Registro (valorRegistro, dataRegistro, fkComponente) VALUES (?, ?, ?)"
+        cursor.execute(query, (valorRegistro, horarioAtual, componente))
         connection.commit()
 
     print("\n----INFORMAÇÕES DA CPU: -----")

@@ -10,15 +10,17 @@ class Usuario{
     var fkEmpresa:Int = 0
 
     lateinit var jdbcTemplate: JdbcTemplate
+    lateinit var jdbcTemplateServer: JdbcTemplate
 
     // método para iniciar o repositório, geralmente chamado no início para configurar a conexão com o banco de dados
     fun iniciar() {
         jdbcTemplate = Conexao.jdbcTemplate!!
+        jdbcTemplateServer = Conexao.jdbcTemplateServer!!
     }
 
     fun validarLogin(login: Usuario): Boolean {
         try {
-            val usuario = jdbcTemplate.queryForObject(
+            val usuarioServer = jdbcTemplateServer.queryForObject(
                 """
                     SELECT nome, email, senha, fkEmpresa FROM Funcionario WHERE (email = '${login.email}' AND senha = '${login.senha}')
                     """, BeanPropertyRowMapper(Usuario::class.java)
@@ -31,13 +33,13 @@ class Usuario{
     }
 
     fun comprimentar(login: Usuario): String {
-        val usuario = jdbcTemplate.queryForObject(
+        val usuarioServer = jdbcTemplateServer.queryForObject(
             """
                 SELECT nome FROM Funcionario WHERE (email = '${login.email}' AND senha = '${login.senha}')
                 """, BeanPropertyRowMapper(Usuario::class.java)
         )
         val mensagem = """
-            Boas-vindas, ${usuario?.nome}, seu login foi validado com sucesso!
+            Boas-vindas, ${usuarioServer?.nome}, seu login foi validado com sucesso!
             Agora você irá prosseguir para etapa de monitoramento. 
         """
 
@@ -45,7 +47,7 @@ class Usuario{
     }
 
     fun verificarEmpresa(login: Usuario): Int? {
-        val usuario = jdbcTemplate.queryForObject(
+        val usuario = jdbcTemplateServer.queryForObject(
             """
                 SELECT fkEmpresa FROM Funcionario WHERE (email = '${login.email}' AND senha = '${login.senha}')  
                 """, BeanPropertyRowMapper(Usuario::class.java)
@@ -57,7 +59,7 @@ class Usuario{
 
     fun mostrarServidor(fkEmpresa: Int): String {
 
-        val listaServidores: List<Servidor> = jdbcTemplate.query(
+        val listaServidores: List<Servidor> = jdbcTemplateServer.query(
             "SELECT Servidor.idServidor, Servidor.nome \n" +
                     "\tFROM Servidor JOIN Salas \n" +
                     "\t\tON Servidor.fkSalas = Salas.idSalas\n" +
@@ -74,13 +76,13 @@ class Usuario{
 
     fun mostrarComponentes(fkServidor: Int): String {
 
-        val listaComponentes: List<Componente> = jdbcTemplate.query(
+        val listaComponentes: List<Componente> = jdbcTemplateServer.query(
             "SELECT idComponente, nome FROM Componente WHERE fkServidor = $fkServidor AND fkTipoComponente =  1 OR fkTipoComponente =  2;",
             BeanPropertyRowMapper(Componente::class.java)
         )
 
         val componente = listaComponentes.map {
-            "Servidor ${it.idComponente} - ${it.nome}"
+            "Componente ${it.idComponente} - ${it.nome}"
         }.joinToString("\n")
         return componente
     }
